@@ -106,6 +106,7 @@ WARNING
         post_bundler
         create_database_yml
         install_binaries
+        run_swagger_docs
         run_assets_precompile_rake_task
       end
       best_practice_warnings
@@ -1020,5 +1021,26 @@ params = CGI.parse(uri.query || "")
       # need to reinstall language pack gems
       install_bundler_in_app
     end
+  end
+
+  def run_swagger_docs
+    instrument 'ruby.run_swagger_docs' do
+      docs = rake.task("swagger:docs")
+      return true unless docs.is_defined?
+
+      topic "Generating Swagger documentation"
+      docs.invoke(env: rake_env)
+      if docs.success?
+        puts "Swagger documentation generation completed (#{"%.2f" % docs.time}s)"
+      else
+        swagger_docs_fail(docs.output)
+      end
+    end
+  end
+
+  def swagger_docs_fail(output)
+    log "swagger_docs", :status => "failure"
+    msg = "Generating Swagger documentation failed.\n"
+    error msg
   end
 end
